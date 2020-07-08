@@ -7,6 +7,8 @@ import (
 	"github.com/stretchr/objx"
 	"fmt"
 	"log"
+	"io"
+	"crypto/md5"
 )
 
 type authHandler struct {
@@ -76,10 +78,18 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 		provider, err), http.StatusInternalServerError)
 		return
 		}
+
+		m := md5.New()
+		io.WriteString(m, strings.ToLower(user.Email()))
+		userId := fmt.Sprintf("%x", m.Sum(nil))
 		authCookieValue := objx.New(map[string]interface{}{
+			"userid": userId,
 			"name": user.Name(),
 			"avatar_url": user.AvatarURL(),
-			}).MustBase64()
+			"email": user.Email(),
+		}).MustBase64()
+
+		
 		http.SetCookie(w, &http.Cookie{
 			Name: "auth",
 			Value: authCookieValue,
